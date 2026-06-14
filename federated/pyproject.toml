@@ -1,0 +1,88 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "quickstart-pytorch"
+version = "1.0.1"
+description = "Federated Learning with PyTorch and Flower (Quickstart Example)"
+license = "Apache-2.0"
+dependencies = [
+    "flwr[simulation]>=1.26.0",
+    "flwr-datasets[vision]>=0.5.0",
+    "torch==2.8.0",
+    "torchvision==0.23.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[tool.flwr.app]
+publisher = "flwrlabs"
+
+[tool.flwr.app.components]
+serverapp = "src.server_app:app"
+clientapp = "src.client_app:app"
+
+[tool.flwr.app.config]
+# Dataset configuration
+dataset-name = "adult-income-census" # "adult-income-census" or "bike-sharing" or "housing-prices" or "banking-market"
+
+# Federated learning hyperparameters
+num-server-rounds = 3
+fraction-evaluate = 1
+local-epochs = 3
+learning-rate = 0.001
+batch-size = 8
+
+# Aggregation strategy
+# Available: "fedavg", "fedprox", "fedtrimmedavg", "fedmedian", "krum", "fldetector"
+aggregation-strategy = "fedavg"
+proximal-mu = 0.01                           # Only used when aggregation-strategy = "fedprox"
+trimmed-mean-beta = 0.1                      # Only used when aggregation-strategy = "fedtrimmedavg"  
+fldetector-window-size = 5
+fldetector-start-epoch = 0
+
+# Partitioning
+partitioning = "iid"                    # "iid" or "dirichlet"
+dirichlet-alpha = 0.5                   # Only used when partitioning = "dirichlet"
+
+# Attack configuration (DPA and MPA)
+attack-enabled = true
+attack-type = "mpaf"                    # "none", "label_flip", "distribution_shift", "history", "mpaf"
+malicious-ratio = 0.8                   # Fraction of clients that are malicious
+poison-fraction = 0.3                   # Fraction of labels/targets to poison per malicious client
+
+victim-label = 1                           # (Label flip) Source label to flip from (for classification)
+target-label = 0                        # (Label flip) Target label to flip to (for classification)
+shift-mechanism = "noise_gaussian"      # (Distribution shift) "noise_gaussian", "noise_uniform"
+shift-param = 5                         # (Distribution shift) Delta value or noise magnitude
+
+selection-strategy = "random"           # (Distribution shift) "random" or "quantile_range"
+victim-quantile-min = 0.0               # (Distribution shift) Lower quantile bound for victim selection
+victim-quantile-max = 1.0               # (Distribution shift) Upper quantile bound for victim selection
+
+model-attack-lambda = 0.3               # (History/MPAF) Scaling factor for crafted malicious model updates
+attack-seed = 42                        # Random seed for deterministic malicious client selection
+
+# SHAP (explainability) configuration
+# Enable server-side SHAP computation and configure frequency/background size
+shap-enabled = true
+shap-every-n-rounds = 1
+shap-background-size = 100
+shap-explanation-size = 50
+shap-output-root = "experiments/shap_outputs"
+shap-generate-plots = false
+
+# Server-side cosine / graph detection configuration
+detection-enabled = true
+detection-mode = "mad-shapcosim"
+detection-alpha = 0.7
+detection-mad-multiplier = 3.0
+detection-min-clients = 3
+
+num-supernodes = 30                    # redundant, keep in sync with options.num-supernodes in ~/.flwr/config.toml
+
+reference-model-epochs = 30
+
+# Reference for shap size: https://mindfulmodeler.substack.com/p/shap-interpretations-depend-on-background
